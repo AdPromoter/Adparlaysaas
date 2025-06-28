@@ -37,6 +37,7 @@ const MultiStepForm: React.FC = () => {
         link.click();
       } catch (error) {
         console.error('Error generating image:', error);
+        // Fallback to JSON download if image generation fails
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formData, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -60,17 +61,20 @@ const MultiStepForm: React.FC = () => {
 
   return (
     <>
+      {/* Hidden summary card for image generation */}
       <div 
         ref={summaryCardRef}
         className="fixed top-0 left-0 w-[800px] h-[600px] bg-white p-8 -translate-x-full pointer-events-none"
         style={{ zIndex: -1 }}
       >
+        {/* 2 Seasons Header */}
         <div className="text-center mb-6">
           <div className="text-3xl font-bold text-blue-700 mb-2">2 SEASONS</div>
           <div className="text-lg text-gray-600">Residential Development</div>
           <div className="text-sm text-gray-500 mt-1">Phase 1 — The City of the 1%</div>
         </div>
         
+        {/* Form Response Summary */}
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 mb-6">
           <h2 className="text-2xl font-bold text-blue-800 mb-4 text-center">Your Interest Summary</h2>
           
@@ -109,6 +113,7 @@ const MultiStepForm: React.FC = () => {
           </div>
         </div>
         
+        {/* Footer */}
         <div className="text-center text-sm text-gray-500 mt-6">
           <div>Generated on {new Date().toLocaleDateString()}</div>
           <div className="mt-2">Thank you for your interest in 2 Seasons Residential</div>

@@ -6,6 +6,7 @@ interface FormData {
   phone: string;
   interest: string;
   description: string;
+  plotSize?: string; // Add plot size for True Vine Lake Front Plots
 }
 
 interface FormContextType {
@@ -13,6 +14,7 @@ interface FormContextType {
   formData: FormData;
   updateForm: (data: Partial<FormData>) => void;
   nextStep: () => void;
+  prevStep: () => void;
   resetForm: () => void;
 }
 
@@ -38,6 +40,7 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
     phone: '',
     interest: '',
     description: '',
+    plotSize: '',
   });
 
   const updateForm = (data: Partial<FormData>) => {
@@ -45,7 +48,11 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
   };
 
   const nextStep = () => {
-    setStep(prev => Math.min(prev + 1, 4));
+    setStep(prev => Math.min(prev + 1, 5)); // Updated to 5 steps
+  };
+
+  const prevStep = () => {
+    setStep(prev => Math.max(prev - 1, 1));
   };
 
   const resetForm = () => {
@@ -56,11 +63,12 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
       phone: '',
       interest: '',
       description: '',
+      plotSize: '',
     });
   };
 
   return (
-    <FormContext.Provider value={{ step, formData, updateForm, nextStep, resetForm }}>
+    <FormContext.Provider value={{ step, formData, updateForm, nextStep, prevStep, resetForm }}>
       {children}
     </FormContext.Provider>
   );
