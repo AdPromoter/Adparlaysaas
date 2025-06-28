@@ -18,7 +18,7 @@ const stepVariants = {
 };
 
 const MultiStepForm: React.FC = () => {
-  const { step, formData, updateForm, nextStep, prevStep } = useFormContext();
+  const { step, formData, updateForm, nextStep, prevStep, resetForm } = useFormContext();
   const summaryCardRef = useRef<HTMLDivElement>(null);
 
   const downloadAsImage = async () => {
@@ -48,15 +48,33 @@ const MultiStepForm: React.FC = () => {
     }
   };
 
-  const renderBackButton = () => (
-    <button
-      type="button"
-      onClick={prevStep}
-      className="w-full py-2 md:py-3 px-4 bg-gray-500 text-white rounded-lg font-semibold text-base md:text-lg shadow-lg hover:bg-gray-600 transition mb-3"
-    >
-      Back
-    </button>
-  );
+  const renderBackButton = () => {
+    if (step > 1 && step < 6) {
+      return (
+        <button
+          onClick={prevStep}
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Go back"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+      );
+    }
+    return null;
+  };
 
   return (
     <>
@@ -173,70 +191,68 @@ const MultiStepForm: React.FC = () => {
           </motion.form>
         )}
         {step === 2 && (
-          <motion.form
+          <motion.div
             key="step2"
-            className="space-y-6 md:space-y-8 bg-white rounded-xl shadow-2xl p-4 md:p-8 animate-fade-in"
+            className="relative space-y-6 md:space-y-8 bg-white rounded-xl shadow-2xl p-4 md:p-8 animate-fade-in"
             initial="initial"
             animate="animate"
             exit="exit"
             variants={stepVariants}
             transition={{ duration: 0.5, type: "spring" }}
-            onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-              e.preventDefault();
-              if (formData.interest) nextStep();
-            }}
           >
-            <h2 className="text-xl md:text-2xl font-bold text-blue-700 mb-4 md:mb-6 text-center drop-shadow">What are you most interested in?</h2>
-            <div className="grid gap-3 md:gap-4">
-              {interestOptions.map(option => (
+            {renderBackButton()}
+            <div>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-800 mb-2 drop-shadow">What interests you most?</h2>
+              <p className="text-gray-600 text-base md:text-lg">Select your primary area of interest</p>
+            </div>
+            <div className="space-y-3 md:space-y-4">
+              {interestOptions.map((option) => (
                 <button
-                  type="button"
                   key={option}
-                  className={`w-full py-2 md:py-3 px-3 md:px-4 rounded-lg border-2 font-semibold text-base md:text-lg shadow transition text-left ${
-                    formData.interest === option
-                      ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white border-blue-600 shadow-lg"
-                      : "bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100"
-                  }`}
                   onClick={() => updateForm({ interest: option })}
+                  className={`w-full p-3 md:p-4 text-left rounded-lg border-2 transition-all duration-200 ${
+                    formData.interest === option
+                      ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                  }`}
                 >
-                  {option}
+                  <span className="font-semibold text-base md:text-lg">{option}</span>
                 </button>
               ))}
             </div>
-            {renderBackButton()}
             <button
-              type="submit"
-              className={`w-full py-2 md:py-3 px-4 rounded-lg font-semibold text-base md:text-lg shadow-lg transition ${
-                formData.interest ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+              onClick={nextStep}
               disabled={!formData.interest}
+              className="w-full py-2 md:py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-lg font-semibold text-base md:text-lg shadow-lg hover:from-blue-700 hover:to-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>
-          </motion.form>
+          </motion.div>
         )}
         {step === 3 && (
-          <motion.form
+          <motion.div
             key="step3"
-            className="space-y-6 md:space-y-8 bg-white rounded-xl shadow-2xl p-4 md:p-8 animate-fade-in"
+            className="relative space-y-6 md:space-y-8 bg-white rounded-xl shadow-2xl p-4 md:p-8 animate-fade-in"
             initial="initial"
             animate="animate"
             exit="exit"
             variants={stepVariants}
             transition={{ duration: 0.5, type: "spring" }}
-            onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-              e.preventDefault();
-              if (formData.description || formData.plotSize) nextStep();
-            }}
           >
-            <h2 className="text-xl md:text-2xl font-bold text-blue-700 mb-4 md:mb-6 text-center drop-shadow">
-              {formData.interest === "True Vine Lake Front Plots" 
-                ? "Select a plot size" 
-                : formData.interest 
-                  ? `Select an option for ${formData.interest}` 
-                  : "Select an option"}
-            </h2>
-            <div className="grid gap-3 md:gap-4">
+            {renderBackButton()}
+            <div>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-800 mb-2 drop-shadow">
+                {formData.interest === "True Vine Lake Front Plots" 
+                  ? "Select a plot size" 
+                  : "Choose your option"}
+              </h2>
+              <p className="text-gray-600 text-base md:text-lg">
+                {formData.interest === "True Vine Lake Front Plots" 
+                  ? "Select your preferred plot size" 
+                  : "Select what you'd like to do"}
+              </p>
+            </div>
+            <div className="space-y-3 md:space-y-4">
               {(() => {
                 let options: string[] = [];
                 switch (formData.interest) {
@@ -284,13 +300,7 @@ const MultiStepForm: React.FC = () => {
                 }
                 return options.map(option => (
                   <button
-                    type="button"
                     key={option}
-                    className={`w-full py-2 md:py-3 px-3 md:px-4 rounded-lg border-2 font-semibold text-base md:text-lg shadow transition text-left ${
-                      (formData.interest === "True Vine Lake Front Plots" ? formData.plotSize : formData.description) === option
-                        ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white border-blue-600 shadow-lg"
-                        : "bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100"
-                    }`}
                     onClick={() => {
                       if (formData.interest === "True Vine Lake Front Plots") {
                         updateForm({ plotSize: option });
@@ -298,85 +308,196 @@ const MultiStepForm: React.FC = () => {
                         updateForm({ description: option });
                       }
                     }}
+                    className={`w-full p-3 md:p-4 text-left rounded-lg border-2 transition-all duration-200 ${
+                      (formData.interest === "True Vine Lake Front Plots" ? formData.plotSize : formData.description) === option
+                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
                   >
-                    {option}
+                    <span className="font-semibold text-base md:text-lg">{option}</span>
                   </button>
                 ));
               })()}
             </div>
-            {renderBackButton()}
             <button
-              type="submit"
-              className={`w-full py-2 md:py-3 px-4 rounded-lg font-semibold text-base md:text-lg shadow-lg transition ${
-                (formData.interest === "True Vine Lake Front Plots" ? formData.plotSize : formData.description) ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+              onClick={nextStep}
               disabled={!(formData.interest === "True Vine Lake Front Plots" ? formData.plotSize : formData.description)}
+              className="w-full py-2 md:py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-lg font-semibold text-base md:text-lg shadow-lg hover:from-blue-700 hover:to-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>
-          </motion.form>
+          </motion.div>
         )}
         {step === 4 && (
-          <motion.form
+          <motion.div
             key="step4"
-            className="space-y-6 md:space-y-8 bg-white rounded-xl shadow-2xl p-4 md:p-8 animate-fade-in"
+            className="relative space-y-6 md:space-y-8 bg-white rounded-xl shadow-2xl p-4 md:p-8 animate-fade-in"
             initial="initial"
             animate="animate"
             exit="exit"
             variants={stepVariants}
             transition={{ duration: 0.5, type: "spring" }}
-            onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-              e.preventDefault();
-              if (formData.description) nextStep();
-            }}
           >
-            <h2 className="text-xl md:text-2xl font-bold text-blue-700 mb-4 md:mb-6 text-center drop-shadow">
-              {formData.interest === "True Vine Lake Front Plots" 
-                ? `What would you like to do with your ${formData.plotSize} plot?` 
-                : "Select your preference"}
-            </h2>
-            <div className="grid gap-3 md:gap-4">
-              {(() => {
-                let options: string[] = [];
-                if (formData.interest === "True Vine Lake Front Plots") {
-                  options = [
-                    "Buy now and build",
-                    "Buy now and build later",
-                    "Buy now and sell later",
-                    "Note my interest",
-                  ];
-                }
-                return options.map(option => (
-                  <button
-                    type="button"
-                    key={option}
-                    className={`w-full py-2 md:py-3 px-3 md:px-4 rounded-lg border-2 font-semibold text-base md:text-lg shadow transition text-left ${
-                      formData.description === option
-                        ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white border-blue-600 shadow-lg"
-                        : "bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100"
-                    }`}
-                    onClick={() => updateForm({ description: option })}
-                  >
-                    {option}
-                  </button>
-                ));
-              })()}
-            </div>
             {renderBackButton()}
+            <div>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-800 mb-2 drop-shadow">
+                {formData.interest === "True Vine Lake Front Plots" 
+                  ? `What would you like to do with your ${formData.plotSize} plot?` 
+                  : "Your Information"}
+              </h2>
+              <p className="text-gray-600 text-base md:text-lg">
+                {formData.interest === "True Vine Lake Front Plots" 
+                  ? "Select your preference" 
+                  : "Please provide your contact details"}
+              </p>
+            </div>
+            
+            {formData.interest === "True Vine Lake Front Plots" ? (
+              <div className="space-y-3 md:space-y-4">
+                {[
+                  "Buy now and build",
+                  "Buy now and build later",
+                  "Buy now and sell later",
+                  "Note my interest",
+                ].map(option => (
+                  <button
+                    key={option}
+                    onClick={() => updateForm({ description: option })}
+                    className={`w-full p-3 md:p-4 text-left rounded-lg border-2 transition-all duration-200 ${
+                      formData.description === option
+                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className="font-semibold text-base md:text-lg">{option}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4 md:space-y-6">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => updateForm({ name: e.target.value })}
+                    className="w-full p-3 md:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base md:text-lg"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={formData.email}
+                    onChange={(e) => updateForm({ email: e.target.value })}
+                    className="w-full p-3 md:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base md:text-lg"
+                    placeholder="Enter your email address"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => updateForm({ phone: e.target.value })}
+                    className="w-full p-3 md:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base md:text-lg"
+                    placeholder="Enter your phone number"
+                  />
+                </div>
+              </div>
+            )}
+            
             <button
-              type="submit"
-              className={`w-full py-2 md:py-3 px-4 rounded-lg font-semibold text-base md:text-lg shadow-lg transition ${
-                formData.description ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-              disabled={!formData.description}
+              onClick={nextStep}
+              disabled={
+                formData.interest === "True Vine Lake Front Plots" 
+                  ? !formData.description 
+                  : (!formData.name || !formData.email || !formData.phone)
+              }
+              className="w-full py-2 md:py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-lg font-semibold text-base md:text-lg shadow-lg hover:from-blue-700 hover:to-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Next
+              {formData.interest === "True Vine Lake Front Plots" ? "Next" : "Submit"}
             </button>
-          </motion.form>
+          </motion.div>
         )}
         {step === 5 && (
           <motion.div
             key="step5"
+            className="relative space-y-6 md:space-y-8 bg-white rounded-xl shadow-2xl p-4 md:p-8 animate-fade-in"
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={stepVariants}
+            transition={{ duration: 0.5, type: "spring" }}
+          >
+            {renderBackButton()}
+            <div>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-800 mb-2 drop-shadow">Your Information</h2>
+              <p className="text-gray-600 text-base md:text-lg">Please provide your contact details</p>
+            </div>
+            <div className="space-y-4 md:space-y-6">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => updateForm({ name: e.target.value })}
+                  className="w-full p-3 md:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base md:text-lg"
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={formData.email}
+                  onChange={(e) => updateForm({ email: e.target.value })}
+                  className="w-full p-3 md:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base md:text-lg"
+                  placeholder="Enter your email address"
+                />
+              </div>
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => updateForm({ phone: e.target.value })}
+                  className="w-full p-3 md:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base md:text-lg"
+                  placeholder="Enter your phone number"
+                />
+              </div>
+            </div>
+            <button
+              onClick={nextStep}
+              disabled={!formData.name || !formData.email || !formData.phone}
+              className="w-full py-2 md:py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-lg font-semibold text-base md:text-lg shadow-lg hover:from-blue-700 hover:to-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Submit
+            </button>
+          </motion.div>
+        )}
+        {step === 6 && (
+          <motion.div
+            key="step6"
             className="space-y-6 md:space-y-8 text-center bg-white rounded-xl shadow-2xl p-4 md:p-8 animate-fade-in"
             initial="initial"
             animate="animate"
@@ -388,12 +509,17 @@ const MultiStepForm: React.FC = () => {
               <h2 className="text-2xl md:text-3xl font-extrabold text-green-700 mb-2 drop-shadow">Thank you!</h2>
               <p className="text-gray-700 text-base md:text-lg">Your responses have been recorded.</p>
             </div>
-            {renderBackButton()}
             <button
               onClick={downloadAsImage}
               className="w-full py-2 md:py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-lg font-semibold text-base md:text-lg shadow-lg hover:from-blue-700 hover:to-blue-500 transition"
             >
               Download Your Summary (PNG)
+            </button>
+            <button
+              onClick={resetForm}
+              className="w-full py-2 md:py-3 px-4 bg-gray-500 text-white rounded-lg font-semibold text-base md:text-lg shadow-lg hover:bg-gray-600 transition"
+            >
+              Start Over
             </button>
           </motion.div>
         )}

@@ -48,7 +48,7 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
   };
 
   const nextStep = () => {
-    setStep(prev => Math.min(prev + 1, 5)); // Updated to 5 steps
+    setStep(prev => Math.min(prev + 1, 6)); // Updated to 6 steps
   };
 
   const prevStep = () => {

@@ -16,6 +16,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           autoPlay
           loop
           muted
+          playsInline
         />
         <div className="relative z-10 p-4 md:p-8 text-white text-center max-w-xl">
           <h1 className="text-xl md:text-3xl lg:text-4xl font-bold mb-4 drop-shadow-lg">
