@@ -18,6 +18,28 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
+interface CustomizationSettings {
+  logo?: string;
+  backgroundVideo?: string;
+  backgroundImage?: string;
+  welcomeMessage?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  formFields?: {
+    name: boolean;
+    email: boolean;
+    phone: boolean;
+    interest: boolean;
+    option: boolean;
+    plotSize: boolean;
+    finalChoice: boolean;
+  };
+  businessName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+}
+
 interface FirebaseContextType {
   user: User | null;
   loading: boolean;
@@ -28,6 +50,8 @@ interface FirebaseContextType {
   updateFormResponse: (id: string, data: any) => Promise<void>;
   setUserRole: (userId: string, role: string) => Promise<void>;
   getUserRole: (userId: string) => Promise<string | null>;
+  saveCustomizationSettings: (settings: CustomizationSettings) => Promise<void>;
+  getCustomizationSettings: () => Promise<CustomizationSettings>;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
@@ -131,6 +155,47 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
     }
   };
 
+  const saveCustomizationSettings = async (settings: CustomizationSettings) => {
+    try {
+      await setDoc(doc(db, 'customization', 'settings'), settings, { merge: true });
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  };
+
+  const getCustomizationSettings = async (): Promise<CustomizationSettings> => {
+    try {
+      const docRef = doc(db, 'customization', 'settings');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return docSnap.data() as CustomizationSettings;
+      }
+      return {
+        logo: '',
+        backgroundVideo: '',
+        backgroundImage: '',
+        welcomeMessage: 'Welcome to 2 Seasons Property Management',
+        primaryColor: '#3B82F6',
+        secondaryColor: '#1F2937',
+        accentColor: '#10B981',
+        formFields: {
+          name: true,
+          email: true,
+          phone: true,
+          interest: true,
+          option: true,
+          plotSize: true,
+          finalChoice: true
+        },
+        businessName: '2 Seasons Property Management',
+        contactEmail: 'info@2seasons.com',
+        contactPhone: '+1 (555) 123-4567'
+      };
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -140,7 +205,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
     getFormResponses,
     updateFormResponse,
     setUserRole,
-    getUserRole
+    getUserRole,
+    saveCustomizationSettings,
+    getCustomizationSettings
   };
 
   return (
