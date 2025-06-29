@@ -10,13 +10,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Top Section - Video Background */}
       <div className="h-1/2 w-full relative flex items-center justify-center bg-gray-900">
         {/* Background image or video */}
-        <video
+        <iframe
           className="absolute inset-0 w-full h-full object-cover opacity-60"
-          src="https://www.w3schools.com/howto/rain.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
+          src="https://www.youtube.com/embed/MnrJzXM7a6o?autoplay=1&loop=1&mute=1&controls=0&showinfo=0&rel=0&modestbranding=1&playlist=MnrJzXM7a6o"
+          title="Black Founders and Developers"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
         />
         <div className="relative z-10 p-4 md:p-8 text-white text-center max-w-xl">
           <h1 className="text-xl md:text-3xl lg:text-4xl font-bold mb-4 drop-shadow-lg">
