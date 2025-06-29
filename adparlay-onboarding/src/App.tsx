@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './Layout';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
@@ -21,6 +21,7 @@ const App: React.FC = () => {
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/settings" element={<CustomizationSettings />} />
+              <Route path="/Adparlaysaas" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
         </FormProvider>
