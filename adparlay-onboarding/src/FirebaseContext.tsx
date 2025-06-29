@@ -13,7 +13,8 @@ import {
   orderBy,
   doc,
   setDoc,
-  getDoc
+  getDoc,
+  updateDoc
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
@@ -24,6 +25,7 @@ interface FirebaseContextType {
   logout: () => Promise<void>;
   saveFormResponse: (data: any) => Promise<string>;
   getFormResponses: () => Promise<any[]>;
+  updateFormResponse: (id: string, data: any) => Promise<void>;
   setUserRole: (userId: string, role: string) => Promise<void>;
   getUserRole: (userId: string) => Promise<string | null>;
 }
@@ -97,6 +99,18 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
     }
   };
 
+  const updateFormResponse = async (id: string, data: any) => {
+    try {
+      const docRef = doc(db, 'formResponses', id);
+      await updateDoc(docRef, {
+        ...data,
+        lastUpdated: new Date()
+      });
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  };
+
   const setUserRole = async (userId: string, role: string) => {
     try {
       await setDoc(doc(db, 'users', userId), { role }, { merge: true });
@@ -124,6 +138,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
     logout,
     saveFormResponse,
     getFormResponses,
+    updateFormResponse,
     setUserRole,
     getUserRole
   };

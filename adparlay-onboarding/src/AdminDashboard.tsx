@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFirebase } from './FirebaseContext';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface FormSubmission {
   id: string;
@@ -14,13 +14,35 @@ interface FormSubmission {
   finalOption: string;
   timestamp: any;
   userId: string;
+  lastUpdated?: any;
+}
+
+interface EditFormData {
+  name: string;
+  email: string;
+  phone: string;
+  interest: string;
+  option: string;
+  plotSize: string;
+  finalOption: string;
 }
 
 const AdminDashboard: React.FC = () => {
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { getFormResponses, logout } = useFirebase();
+  const [editingSubmission, setEditingSubmission] = useState<FormSubmission | null>(null);
+  const [editFormData, setEditFormData] = useState<EditFormData>({
+    name: '',
+    email: '',
+    phone: '',
+    interest: '',
+    option: '',
+    plotSize: '',
+    finalOption: ''
+  });
+  const [saving, setSaving] = useState(false);
+  const { getFormResponses, updateFormResponse, logout } = useFirebase();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,8 +70,51 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const openEditModal = (submission: FormSubmission) => {
+    setEditingSubmission(submission);
+    setEditFormData({
+      name: submission.name,
+      email: submission.email,
+      phone: submission.phone,
+      interest: submission.interest,
+      option: submission.option || '',
+      plotSize: submission.plotSize || '',
+      finalOption: submission.finalOption
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingSubmission(null);
+    setEditFormData({
+      name: '',
+      email: '',
+      phone: '',
+      interest: '',
+      option: '',
+      plotSize: '',
+      finalOption: ''
+    });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSubmission) return;
+
+    try {
+      setSaving(true);
+      await updateFormResponse(editingSubmission.id, editFormData);
+      await loadSubmissions(); // Reload to get updated data
+      closeEditModal();
+      setError('');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Interest', 'Option', 'Plot Size', 'Final Choice', 'Date'];
+    const headers = ['Name', 'Email', 'Phone', 'Interest', 'Option', 'Plot Size', 'Final Choice', 'Date', 'Last Updated'];
     const csvData = submissions.map(sub => [
       sub.name,
       sub.email,
@@ -58,7 +123,8 @@ const AdminDashboard: React.FC = () => {
       sub.option || '',
       sub.plotSize || '',
       sub.finalOption,
-      new Date(sub.timestamp?.toDate?.() || sub.timestamp).toLocaleDateString()
+      new Date(sub.timestamp?.toDate?.() || sub.timestamp).toLocaleDateString(),
+      sub.lastUpdated ? new Date(sub.lastUpdated?.toDate?.() || sub.lastUpdated).toLocaleDateString() : 'Never'
     ]);
 
     const csvContent = [headers, ...csvData]
@@ -219,6 +285,9 @@ const AdminDashboard: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -254,6 +323,14 @@ const AdminDashboard: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(submission.timestamp)}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => openEditModal(submission)}
+                          className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-colors"
+                        >
+                          Edit
+                        </button>
+                      </td>
                     </motion.tr>
                   ))}
                 </tbody>
@@ -262,6 +339,145 @@ const AdminDashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {editingSubmission && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Edit Submission</h3>
+                <p className="text-sm text-gray-500">Update the form submission details</p>
+              </div>
+              
+              <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.name}
+                      onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={editFormData.email}
+                      onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone *
+                    </label>
+                    <input
+                      type="tel"
+                      value={editFormData.phone}
+                      onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Interest *
+                    </label>
+                    <select
+                      value={editFormData.interest}
+                      onChange={(e) => setEditFormData({...editFormData, interest: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select Interest</option>
+                      <option value="Buying">Buying</option>
+                      <option value="Selling">Selling</option>
+                      <option value="Renting">Renting</option>
+                      <option value="Investing">Investing</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Option
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.option}
+                      onChange={(e) => setEditFormData({...editFormData, option: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Plot Size
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.plotSize}
+                      onChange={(e) => setEditFormData({...editFormData, plotSize: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Final Choice *
+                    </label>
+                    <select
+                      value={editFormData.finalOption}
+                      onChange={(e) => setEditFormData({...editFormData, finalOption: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select Final Choice</option>
+                      <option value="Option 1">Option 1</option>
+                      <option value="Option 2">Option 2</option>
+                      <option value="Option 3">Option 3</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors disabled:opacity-50"
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
