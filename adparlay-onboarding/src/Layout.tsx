@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import MultiStepForm from "./MultiStepForm";
+import AuthForm from "./AuthForm";
 
 const Layout: React.FC = () => {
   return (
@@ -26,18 +26,14 @@ const Layout: React.FC = () => {
         </div>
       </div>
 
-      {/* Form Section */}
+      {/* Auth Section */}
       <div className="lg:w-1/2 bg-white flex items-center justify-center p-4 lg:p-8">
         <div className="w-full max-w-md">
-          <div className="text-right mb-4">
-            <Link 
-              to="/admin/login" 
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              Admin Login
-            </Link>
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Adparlay</h1>
+            <p className="text-lg text-gray-600">Smart lead collection for modern business</p>
           </div>
-          <MultiStepForm />
+          <AuthForm />
         </div>
       </div>
     </div>

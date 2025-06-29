@@ -4,6 +4,7 @@ import Layout from './Layout';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
 import CustomizationSettings from './CustomizationSettings';
+import UserDashboard from './UserDashboard';
 import { FormProvider } from './FormContext';
 import { FirebaseProvider } from './FirebaseContext';
 import './index.css';
@@ -16,6 +17,7 @@ const App: React.FC = () => {
           <Router>
             <Routes>
               <Route path="/" element={<Layout />} />
+              <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/settings" element={<CustomizationSettings />} />
