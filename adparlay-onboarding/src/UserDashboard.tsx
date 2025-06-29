@@ -1,8 +1,13 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const UserDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const navigate = useNavigate();
+
+  const handleCreateForm = () => {
+    navigate('/form-builder');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -148,7 +153,10 @@ const UserDashboard: React.FC = () => {
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-lg font-medium text-gray-900">Your Forms</h2>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                  <button 
+                    onClick={handleCreateForm}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
                     Create New Form
                   </button>
                 </div>
