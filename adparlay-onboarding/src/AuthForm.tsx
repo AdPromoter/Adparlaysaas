@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useFirebase } from "./FirebaseContext";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "./firebase";
+import { setDoc, doc } from "firebase/firestore";
+import { db } from "./firebase";
 
 const AuthForm: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,19 +17,39 @@ const AuthForm: React.FC = () => {
     fullName: ""
   });
   const navigate = useNavigate();
+  const { login } = useFirebase();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLogin) {
-      // Handle login
-      console.log("Login:", { email: formData.email, password: formData.password });
-      // Redirect to dashboard after successful login
-      navigate("/dashboard");
-    } else {
-      // Handle signup
-      console.log("Signup:", formData);
-      // Redirect to dashboard after successful signup
-      navigate("/dashboard");
+    setError("");
+    setLoading(true);
+    try {
+      if (isLogin) {
+        await login(formData.email, formData.password);
+        navigate("/dashboard");
+      } else {
+        if (formData.password !== formData.confirmPassword) {
+          setError("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+        const user = userCredential.user;
+        // Save extra fields to Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          email: formData.email,
+          fullName: formData.fullName,
+          businessName: formData.businessName,
+          createdAt: new Date()
+        });
+        navigate("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message || "Authentication failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,13 +63,13 @@ const AuthForm: React.FC = () => {
   return (
     <div className="w-full">
       {/* Toggle Buttons */}
-      <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+      <div className="flex mb-6 bg-background rounded-lg p-1 border border-border">
         <button
           onClick={() => setIsLogin(true)}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
             isLogin
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-800"
+              ? "bg-panel text-primary shadow-sm border border-border"
+              : "text-muted hover:text-heading"
           }`}
         >
           Sign In
@@ -53,8 +78,8 @@ const AuthForm: React.FC = () => {
           onClick={() => setIsLogin(false)}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
             !isLogin
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-800"
+              ? "bg-panel text-primary shadow-sm border border-border"
+              : "text-muted hover:text-heading"
           }`}
         >
           Sign Up
@@ -73,7 +98,7 @@ const AuthForm: React.FC = () => {
         {!isLogin && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-heading mb-2">
                 Full Name
               </label>
               <input
@@ -81,13 +106,13 @@ const AuthForm: React.FC = () => {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 border border-border rounded-lg bg-background text-body focus:ring-2 focus:ring-primary focus:outline-none"
                 placeholder="Enter your full name"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-heading mb-2">
                 Business Name
               </label>
               <input
@@ -95,7 +120,7 @@ const AuthForm: React.FC = () => {
                 name="businessName"
                 value={formData.businessName}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 border border-border rounded-lg bg-background text-body focus:ring-2 focus:ring-primary focus:outline-none"
                 placeholder="Enter your business name"
                 required
               />
@@ -104,7 +129,7 @@ const AuthForm: React.FC = () => {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-heading mb-2">
             Email Address
           </label>
           <input
@@ -112,14 +137,14 @@ const AuthForm: React.FC = () => {
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-border rounded-lg bg-background text-body focus:ring-2 focus:ring-primary focus:outline-none"
             placeholder="Enter your email address"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-heading mb-2">
             Password
           </label>
           <input
@@ -127,7 +152,7 @@ const AuthForm: React.FC = () => {
             name="password"
             value={formData.password}
             onChange={handleInputChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-border rounded-lg bg-background text-body focus:ring-2 focus:ring-primary focus:outline-none"
             placeholder="Enter your password"
             required
           />
@@ -135,7 +160,7 @@ const AuthForm: React.FC = () => {
 
         {!isLogin && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-heading mb-2">
               Confirm Password
             </label>
             <input
@@ -143,39 +168,44 @@ const AuthForm: React.FC = () => {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-3 border border-border rounded-lg bg-background text-body focus:ring-2 focus:ring-primary focus:outline-none"
               placeholder="Confirm your password"
               required
             />
           </div>
         )}
 
+        {error && (
+          <div className="bg-error/10 text-error text-sm rounded-lg px-4 py-2 mb-2 border border-error">{error}</div>
+        )}
+
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={loading}
         >
-          {isLogin ? "Sign In" : "Create Account"}
+          {loading ? (isLogin ? "Signing In..." : "Creating Account...") : isLogin ? "Sign In" : "Create Account"}
         </button>
       </motion.form>
 
       {/* Additional Links */}
       <div className="mt-6 text-center">
         {isLogin ? (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted">
             Don't have an account?{" "}
             <button
               onClick={() => setIsLogin(false)}
-              className="text-blue-600 hover:text-blue-800 font-medium"
+              className="text-primary hover:text-primary/90 font-medium"
             >
               Sign up here
             </button>
           </p>
         ) : (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted">
             Already have an account?{" "}
             <button
               onClick={() => setIsLogin(true)}
-              className="text-blue-600 hover:text-blue-800 font-medium"
+              className="text-primary hover:text-primary/90 font-medium"
             >
               Sign in here
             </button>
@@ -187,7 +217,7 @@ const AuthForm: React.FC = () => {
       <div className="mt-4 text-center">
         <Link
           to="/admin/login"
-          className="text-sm text-gray-500 hover:text-gray-700 underline"
+          className="text-sm text-muted hover:text-heading underline"
         >
           Admin Access
         </Link>

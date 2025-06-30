@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface Question {
   id: string;
@@ -24,6 +24,7 @@ interface Block {
 
 const FormBuilder: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [showWelcome, setShowWelcome] = useState(true);
@@ -38,6 +39,38 @@ const FormBuilder: React.FC = () => {
   const [showRestorePrompt, setShowRestorePrompt] = useState(false);
   const [showNavModal, setShowNavModal] = useState(false);
   const [hasUnsaved, setHasUnsaved] = useState(false);
+  const [media, setMedia] = useState<{ type: 'image' | 'video' | 'embed' | ''; url: string; primaryText?: string; secondaryText?: string }>({ type: '', url: '', primaryText: '', secondaryText: '' });
+  const [postSaveModal, setPostSaveModal] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [lastSavedFormId, setLastSavedFormId] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingFormId, setEditingFormId] = useState<string | null>(null);
+
+  // Check for edit mode on mount
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const editFormId = searchParams.get('edit');
+    
+    if (editFormId) {
+      setIsEditMode(true);
+      setEditingFormId(editFormId);
+      loadFormForEditing(editFormId);
+    }
+  }, [location.search]);
+
+  // Load form data for editing
+  const loadFormForEditing = (formId: string) => {
+    const forms = JSON.parse(localStorage.getItem('forms') || '[]');
+    const formToEdit = forms.find((form: any) => form.id === formId);
+    
+    if (formToEdit) {
+      setBlocks(formToEdit.blocks || []);
+      setQuestions(formToEdit.questions || []);
+      setMedia(formToEdit.media || { type: '', url: '', primaryText: '', secondaryText: '' });
+      setShowWelcome(false);
+      setLastSavedFormId(formId);
+    }
+  };
 
   // Autosave to localStorage
   useEffect(() => {
@@ -48,14 +81,16 @@ const FormBuilder: React.FC = () => {
     }
   }, [blocks, questions]);
 
-  // On mount, check for draft
+  // On mount, check for draft (only if not in edit mode)
   useEffect(() => {
-    const draftBlocks = localStorage.getItem('formbuilder_draft_blocks');
-    const draftQuestions = localStorage.getItem('formbuilder_draft_questions');
-    if ((draftBlocks && JSON.parse(draftBlocks).length > 0) || (draftQuestions && JSON.parse(draftQuestions).length > 0)) {
-      setShowRestorePrompt(true);
+    if (!isEditMode) {
+      const draftBlocks = localStorage.getItem('formbuilder_draft_blocks');
+      const draftQuestions = localStorage.getItem('formbuilder_draft_questions');
+      if ((draftBlocks && JSON.parse(draftBlocks).length > 0) || (draftQuestions && JSON.parse(draftQuestions).length > 0)) {
+        setShowRestorePrompt(true);
+      }
     }
-  }, []);
+  }, [isEditMode]);
 
   // Restore draft
   const handleRestoreDraft = () => {
@@ -74,9 +109,45 @@ const FormBuilder: React.FC = () => {
 
   // Save and go to dashboard
   const handleSaveAndGo = () => {
-    localStorage.setItem('formbuilder_draft_blocks', JSON.stringify(blocks));
-    localStorage.setItem('formbuilder_draft_questions', JSON.stringify(questions));
+    const forms = JSON.parse(localStorage.getItem('forms') || '[]');
+    const formTitle = blocks[0]?.title || 'Untitled Form';
+    
+    if (isEditMode && editingFormId) {
+      // Update existing form
+      const formIndex = forms.findIndex((form: any) => form.id === editingFormId);
+      if (formIndex !== -1) {
+        forms[formIndex] = {
+          ...forms[formIndex],
+          title: formTitle,
+          blocks,
+          questions,
+          media,
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem('forms', JSON.stringify(forms));
+        setLastSavedFormId(editingFormId);
+      }
+    } else {
+      // Create new form
+      const formId = `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const form = {
+        id: formId,
+        title: formTitle,
+        blocks,
+        questions,
+        media,
+        createdAt: new Date().toISOString()
+      };
+      forms.push(form);
+      localStorage.setItem('forms', JSON.stringify(forms));
+      setLastSavedFormId(formId);
+    }
+    
+    // Remove draft
+    localStorage.removeItem('formbuilder_draft_blocks');
+    localStorage.removeItem('formbuilder_draft_questions');
     setHasUnsaved(false);
+    localStorage.setItem('dashboard_reload', Date.now().toString());
     navigate('/dashboard');
   };
   // Discard and go to dashboard
@@ -134,26 +205,78 @@ const FormBuilder: React.FC = () => {
     ));
   };
 
+  useEffect(() => {
+    const draftBlocks = localStorage.getItem('formbuilder_draft_blocks');
+    const draftQuestions = localStorage.getItem('formbuilder_draft_questions');
+    if (!draftBlocks && !draftQuestions && blocks.length === 0 && questions.length === 0) {
+      // Add default block and questions
+      const blockId = `block-${Date.now()}`;
+      setBlocks([
+        {
+          id: blockId,
+          title: 'Contact Information',
+          isEditing: false
+        }
+      ]);
+      setQuestions([
+        {
+          id: `question-${Date.now()}-1`,
+          type: 'text',
+          label: 'Name',
+          helpText: '',
+          required: true,
+          isEditing: false,
+          blockId,
+          options: [],
+          conditionalLogic: []
+        },
+        {
+          id: `question-${Date.now()}-2`,
+          type: 'email',
+          label: 'Email',
+          helpText: '',
+          required: true,
+          isEditing: false,
+          blockId,
+          options: [],
+          conditionalLogic: []
+        },
+        {
+          id: `question-${Date.now()}-3`,
+          type: 'phone',
+          label: 'Phone Number',
+          helpText: '',
+          required: true,
+          isEditing: false,
+          blockId,
+          options: [],
+          conditionalLogic: []
+        }
+      ]);
+    }
+    // eslint-disable-next-line
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-background p-4 font-sans">
       {/* Back to Dashboard Button */}
       <div className="mb-6 flex items-center">
         <button
           onClick={handleDashboardClick}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-panel text-primary rounded-xl shadow hover:bg-secondary/10 transition-colors font-semibold border border-border"
         >
           <span className="text-lg">←</span> Dashboard
         </button>
       </div>
       {showWelcome && (
-        <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Welcome to Form Builder</h1>
-          <p className="text-gray-600 mb-8">Start building your form by adding a question block.</p>
+        <div className="max-w-2xl mx-auto bg-panel rounded-3xl shadow-2xl p-10 text-center border border-border">
+          <h1 className="text-4xl font-extrabold text-heading mb-6 tracking-tight">Welcome to Form Builder</h1>
+          <p className="text-body mb-8 text-lg">Start building your form by adding a question block.</p>
           <button
             onClick={addBlock}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium"
+            className="bg-primary text-white px-6 py-3 rounded-xl font-bold text-lg shadow hover:bg-primary/90 transition-colors"
           >
-            ➕ Add Question Block
+            Add Question Block
           </button>
         </div>
       )}
@@ -161,18 +284,102 @@ const FormBuilder: React.FC = () => {
       {!showWelcome && (
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-            <h1 className="text-2xl font-bold text-gray-800">Form Builder</h1>
+            <h1 className="text-3xl font-extrabold text-heading tracking-tight">Form Builder</h1>
             <button
               onClick={addBlock}
-              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-primary text-white px-6 py-3 rounded-xl font-bold text-lg shadow hover:bg-primary/90 transition-colors"
             >
-              ➕ Add Question Block
+              Add Question Block
             </button>
           </div>
 
-          <div className="space-y-8">
+          {/* Media Section */}
+          <div className="max-w-2xl mx-auto bg-panel rounded-2xl shadow-lg p-6 mb-8 border border-border">
+            <h2 className="text-lg font-bold text-heading mb-2">Form Media</h2>
+            <div className="flex flex-col gap-3">
+              <label className="font-medium text-body">Media Type:</label>
+              <select
+                value={media.type}
+                onChange={e => setMedia({ ...media, type: e.target.value as any })}
+                className="w-full p-2 border border-border rounded-lg bg-background text-body focus:ring-2 focus:ring-primary focus:outline-none"
+              >
+                <option value="">None</option>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="embed">Embed/Link</option>
+              </select>
+              {/* Primary and Secondary Text Inputs */}
+              <input
+                type="text"
+                placeholder="Primary (bold) text"
+                value={media.primaryText || ''}
+                onChange={e => setMedia({ ...media, primaryText: e.target.value })}
+                className="w-full px-4 py-2 border border-border rounded-lg mt-2 font-bold text-lg bg-background text-body focus:ring-2 focus:ring-primary focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Secondary (smaller) text"
+                value={media.secondaryText || ''}
+                onChange={e => setMedia({ ...media, secondaryText: e.target.value })}
+                className="w-full px-4 py-2 border border-border rounded-lg mt-1 text-sm bg-background text-body focus:ring-2 focus:ring-primary focus:outline-none"
+              />
+              {media.type === 'image' && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = ev => setMedia({ ...media, type: 'image', url: ev.target?.result as string });
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full"
+                />
+              )}
+              {media.type === 'video' && (
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = ev => setMedia({ ...media, type: 'video', url: ev.target?.result as string });
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full"
+                />
+              )}
+              {media.type === 'embed' && (
+                <input
+                  type="text"
+                  placeholder="Paste media link (YouTube, Vimeo, etc.)"
+                  value={media.url}
+                  onChange={e => setMedia({ ...media, url: e.target.value })}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              )}
+              {media.url && (
+                <div className="mt-3">
+                  <span className="font-medium">Preview:</span>
+                  <div className="mt-2">
+                    {media.type === 'image' && <img src={media.url} alt="Form Media" className="max-h-48 rounded" />}
+                    {media.type === 'video' && <video src={media.url} controls className="max-h-48 rounded" />}
+                    {media.type === 'embed' && (
+                      <iframe src={media.url} title="Embedded Media" className="w-full h-48 rounded" allowFullScreen />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-10">
             {blocks.map(block => (
-              <div key={block.id} className="bg-white rounded-2xl shadow-lg p-6">
+              <div key={block.id} className="bg-white rounded-3xl shadow-xl p-8 border border-border">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                   {block.isEditing ? (
                     <input
@@ -181,11 +388,11 @@ const FormBuilder: React.FC = () => {
                       onChange={(e) => setBlocks(blocks.map(b => 
                         b.id === block.id ? { ...b, title: e.target.value } : b
                       ))}
-                      className="w-full sm:w-auto text-xl font-semibold px-3 py-1 border rounded"
+                      className="w-full sm:w-auto text-2xl font-bold px-4 py-2 border border-border rounded-lg bg-background text-body focus:ring-2 focus:ring-primary focus:outline-none"
                       placeholder="Block Title"
                     />
                   ) : (
-                    <h2 className="text-xl font-semibold">{block.title}</h2>
+                    <h2 className="text-2xl font-bold text-heading">{block.title}</h2>
                   )}
                   
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -193,13 +400,13 @@ const FormBuilder: React.FC = () => {
                       <>
                         <button
                           onClick={() => handleSaveBlock(block.id)}
-                          className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          className="w-full sm:w-auto px-5 py-2 bg-green-600 text-white rounded-xl shadow hover:bg-green-700 font-semibold"
                         >
                           Save Block
                         </button>
                         <button
                           onClick={() => addQuestionToBlock(block.id)}
-                          className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          className="w-full sm:w-auto px-5 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 font-semibold"
                         >
                           Add Question
                         </button>
@@ -210,7 +417,7 @@ const FormBuilder: React.FC = () => {
                           onClick={() => setBlocks(blocks.map(b => 
                             b.id === block.id ? { ...b, isEditing: true } : b
                           ))}
-                          className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          className="w-full sm:w-auto px-5 py-2 bg-blue-100 text-blue-700 rounded-xl shadow hover:bg-blue-200 font-semibold"
                         >
                           Edit Block
                         </button>
@@ -219,7 +426,7 @@ const FormBuilder: React.FC = () => {
                             setBlocks(blocks.filter(b => b.id !== block.id));
                             setQuestions(questions.filter(q => q.blockId !== block.id));
                           }}
-                          className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                          className="w-full sm:w-auto px-5 py-2 bg-red-100 text-red-700 rounded-xl shadow hover:bg-red-200 font-semibold"
                         >
                           Delete Block
                         </button>
@@ -232,7 +439,7 @@ const FormBuilder: React.FC = () => {
                   {questions
                     .filter(question => question.blockId === block.id)
                     .map(question => (
-                      <div key={question.id} className="border rounded-lg p-4">
+                      <div key={question.id} className="border border-border rounded-2xl p-6 bg-blue-50/50 shadow-sm">
                         {question.isEditing ? (
                           <div className="space-y-4">
                             <div className="flex items-center gap-3 mb-4">
@@ -249,7 +456,7 @@ const FormBuilder: React.FC = () => {
                                     ? { ...q, type: e.target.value }
                                     : q
                                 ))}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                               >
                                 <option value="text">📝 Text Input</option>
                                 <option value="email">📧 Email</option>
@@ -273,7 +480,7 @@ const FormBuilder: React.FC = () => {
                                     ? { ...q, label: e.target.value }
                                     : q
                                 ))}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                 placeholder="Enter your question..."
                               />
                             </div>
@@ -288,7 +495,7 @@ const FormBuilder: React.FC = () => {
                                     ? { ...q, helpText: e.target.value }
                                     : q
                                 ))}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                 placeholder="Add helpful text for users..."
                               />
                             </div>
@@ -375,7 +582,7 @@ const FormBuilder: React.FC = () => {
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
                                   <span className="text-2xl">{getTypeIcon(question.type)}</span>
-                                  <span className="text-xs text-gray-500 uppercase tracking-wide font-medium bg-gray-100 px-3 py-1 rounded-full">
+                                  <span className="text-xs text-muted uppercase tracking-wide font-medium bg-background px-3 py-1 rounded-full font-medium">
                                     {question.type}
                                   </span>
                                 </div>
@@ -429,7 +636,11 @@ const FormBuilder: React.FC = () => {
           {/* Save Form Button */}
           <div className="mt-8 flex justify-center">
             <button
-              onClick={() => setPreviewOpen(true)}
+              onClick={() => {
+                setPreviewOpen(false);
+                setPostSaveModal(true);
+                // Save logic here (e.g., to localStorage or backend)
+              }}
               className="px-8 py-3 bg-green-600 text-white rounded-xl shadow-lg hover:bg-green-700 text-lg font-bold transition-colors w-full max-w-xs"
             >
               💾 Save Form
@@ -515,7 +726,7 @@ const FormBuilder: React.FC = () => {
                 >
                   ×
                 </button>
-                <FormPreview blocks={blocks} questions={questions} />
+                <FormPreview blocks={blocks} questions={questions} media={media} />
               </div>
             </div>
           )}
@@ -546,6 +757,42 @@ const FormBuilder: React.FC = () => {
               </div>
             </div>
           )}
+          {/* Post-Save Modal */}
+          {postSaveModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md text-center">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Form Saved!</h3>
+                <p className="mb-6">What would you like to do next?</p>
+                <div className="flex flex-col gap-4">
+                  <button
+                    onClick={() => {
+                      setPreviewOpen(true);
+                      setPostSaveModal(false);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    Preview Form
+                  </button>
+                  <button
+                    onClick={() => {
+                      const shareUrl = window.location.origin + '/share/form/' + (lastSavedFormId || '12345');
+                      navigator.clipboard.writeText(shareUrl);
+                      alert('Shareable link copied to clipboard!');
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                  >
+                    Copy Shareable Link
+                  </button>
+                  <button
+                    onClick={() => setPostSaveModal(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -567,18 +814,22 @@ const getTypeIcon = (type: string): string => {
   }
 };
 
-const FormPreview: React.FC<{ blocks: Block[]; questions: Question[] }> = ({ blocks, questions }) => {
+const FormPreview: React.FC<{ blocks: Block[]; questions: Question[]; media: { type: 'image' | 'video' | 'embed' | ''; url: string; primaryText?: string; secondaryText?: string } }> = ({ blocks, questions, media }) => {
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
-  const [answers, setAnswers] = useState<{ [questionId: string]: any }>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState<{ [questionId: string]: any }>({});
+  const [submitted, setSubmitted] = useState(false);
 
   if (blocks.length === 0) {
     return <div className="p-8 text-center text-gray-500">No blocks to preview.</div>;
   }
 
-  const block = blocks[currentBlockIndex];
-  const blockQuestions = questions.filter(q => q.blockId === block.id);
-  const question = blockQuestions[currentQuestionIndex];
+  const block = blocks[currentBlockIndex] || blocks[0];
+  const blockQuestions = questions.filter(q => q.blockId === block?.id) || [];
+  const question = blockQuestions[currentQuestionIndex] || blockQuestions[0];
+  if (!block || !question) {
+    return <div className="p-8 text-center text-error">Form preview data is missing or invalid.</div>;
+  }
 
   // Find the next question index based on logic
   const getNextQuestionIndex = (selectedOption?: string) => {
@@ -608,22 +859,46 @@ const FormPreview: React.FC<{ blocks: Block[]; questions: Question[] }> = ({ blo
       setCurrentQuestionIndex(currentQuestionIndex - 1);
     } else if (currentBlockIndex > 0) {
       setCurrentBlockIndex(currentBlockIndex - 1);
-      const prevBlockQuestions = questions.filter(q => q.blockId === blocks[currentBlockIndex - 1].id);
-      setCurrentQuestionIndex(prevBlockQuestions.length - 1);
+      const prevBlockQuestions = questions.filter(q => q.blockId === blocks[currentBlockIndex - 1]?.id) || [];
+      setCurrentQuestionIndex(Math.max(0, prevBlockQuestions.length - 1));
     }
   };
 
-  if (!question) {
+  if (submitted) {
     return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold mb-4">Form Complete!</h2>
-        <p className="text-gray-600">You have reached the end of the form preview.</p>
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-green-600 mb-4">Thank you for your submission!</h2>
+        <p className="text-gray-700">We have received your response.</p>
       </div>
     );
   }
 
+  // If last block and last question, show submit button
+  const isLastBlock = currentBlockIndex === blocks.length - 1;
+  const isLastQuestion = currentQuestionIndex === blockQuestions.length - 1;
+
   return (
     <div className="p-6 max-w-lg mx-auto w-full">
+      {media.url && (
+        <div
+          className="w-full relative flex justify-center items-center mb-6 overflow-hidden"
+          style={media.type === 'image' ? { minHeight: '200px', backgroundImage: `url(${media.url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { minHeight: '200px' }}
+        >
+          {media.type === 'video' && (
+            <video src={media.url} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-0" />
+          )}
+          {media.type === 'embed' && (
+            <iframe src={media.url} title="Embedded Media" className="absolute inset-0 w-full h-full object-cover z-0" allowFullScreen />
+          )}
+          {/* Overlayed Texts */}
+          <div className="absolute inset-0 flex flex-col justify-center items-center z-10 text-white text-center px-4">
+            {media.primaryText && <div className="font-bold text-2xl md:text-3xl drop-shadow-lg mb-2">{media.primaryText}</div>}
+            {media.secondaryText && <div className="text-base md:text-lg drop-shadow-md opacity-90">{media.secondaryText}</div>}
+          </div>
+          {/* Fallback for image (for accessibility) */}
+          {media.type === 'image' && <img src={media.url} alt="Form Media" className="invisible w-full h-full object-cover absolute inset-0" />}
+        </div>
+      )}
       <h2 className="text-xl font-bold mb-4 text-center">{block.title}</h2>
       <div className="mb-6">
         <div className="mb-2 text-lg font-medium">{question.label} {question.required && <span className="text-red-500">*</span>}</div>
@@ -725,22 +1000,32 @@ const FormPreview: React.FC<{ blocks: Block[]; questions: Question[] }> = ({ blo
         >
           Previous
         </button>
-        {['select', 'radio'].includes(question.type) ? (
+        {isLastBlock && isLastQuestion ? (
           <button
-            onClick={() => handleNext(answers[question.id])}
-            disabled={question.required && !answers[question.id]}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+            type="button"
+            className="w-full ml-4 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors"
+            onClick={() => setSubmitted(true)}
           >
-            Next
+            Submit
           </button>
         ) : (
-          <button
-            onClick={() => handleNext()}
-            disabled={question.required && !answers[question.id]}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
-          >
-            Next
-          </button>
+          ['select', 'radio'].includes(question.type) ? (
+            <button
+              onClick={() => handleNext(answers[question.id])}
+              disabled={question.required && !answers[question.id]}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              onClick={() => handleNext()}
+              disabled={question.required && !answers[question.id]}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+            >
+              Next
+            </button>
+          )
         )}
       </div>
     </div>

@@ -314,14 +314,14 @@ const MultiStepForm: React.FC = () => {
       case 5:
         // Conditional step based on interest
         if (formData.interest === 'Buy') {
-          return (
-            <motion.div
-              key="step5"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="space-y-6"
-            >
+        return (
+          <motion.div
+            key="step5"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            className="space-y-6"
+          >
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">What type of property?</h2>
                 <p className="text-gray-600">Select your preferred property type</p>
@@ -445,30 +445,30 @@ const MultiStepForm: React.FC = () => {
             <p className="text-gray-800">{formData.timeline}</p>
           </div>
           {formData.propertyType && (
-            <div>
+                <div>
               <span className="font-semibold text-gray-700">Property Type:</span>
               <p className="text-gray-800">{formData.propertyType}</p>
-            </div>
-          )}
+                </div>
+              )}
           {formData.bedrooms && (
-            <div>
+                <div>
               <span className="font-semibold text-gray-700">Bedrooms:</span>
               <p className="text-gray-800">{formData.bedrooms}</p>
+                </div>
+              )}
+              </div>
             </div>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
+          </motion.div>
+        );
 
   const renderSubmitStep = () => (
-    <motion.div
+          <motion.div
       key="submit"
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -50 }}
-      className="space-y-6 text-center"
-    >
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            className="space-y-6 text-center"
+          >
       <div className="mb-8">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -476,16 +476,16 @@ const MultiStepForm: React.FC = () => {
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Thank You!</h2>
-        <p className="text-gray-600">Your information has been submitted successfully.</p>
+            <p className="text-gray-600">Your information has been submitted successfully.</p>
       </div>
-      
+            
       <div className="space-y-4">
-        <button
-          onClick={handleDownload}
+            <button
+              onClick={handleDownload}
           className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Download Summary
-        </button>
+            >
+              Download Summary
+            </button>
         <button
           onClick={() => window.location.reload()}
           className="w-full bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors"
@@ -500,10 +500,10 @@ const MultiStepForm: React.FC = () => {
     <div className="max-w-2xl mx-auto p-6">
       {renderProgressBar()}
       
-      <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait">
         {currentStep <= getTotalSteps() ? renderStep() : renderSubmitStep()}
-      </AnimatePresence>
-      
+        </AnimatePresence>
+
       {currentStep <= getTotalSteps() && (
         <div className="flex justify-between mt-8">
           <button

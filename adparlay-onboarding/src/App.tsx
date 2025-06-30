@@ -6,6 +6,7 @@ import AdminDashboard from './AdminDashboard';
 import CustomizationSettings from './CustomizationSettings';
 import UserDashboard from './UserDashboard';
 import FormBuilder from './FormBuilder';
+import FormPreview from './FormPreview';
 import { FormProvider } from './FormContext';
 import { FirebaseProvider } from './FirebaseContext';
 import './index.css';
@@ -20,6 +21,8 @@ const App: React.FC = () => {
               <Route path="/" element={<Layout />} />
               <Route path="/dashboard" element={<UserDashboard />} />
               <Route path="/form-builder" element={<FormBuilder />} />
+              <Route path="/form-preview/:formId" element={<FormPreview />} />
+              <Route path="/share/form/:formId" element={<FormPreview />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/settings" element={<CustomizationSettings />} />
