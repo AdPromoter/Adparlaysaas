@@ -12,7 +12,7 @@ interface Question {
   blockId: string;
   conditionalLogic?: Array<{
     option: string;
-    targetFormId?: string;
+    targetBlockId?: string;
   }>;
 }
 
@@ -307,63 +307,65 @@ const FormBuilder: React.FC = () => {
                               <span className="text-sm font-medium text-gray-700">Required field</span>
                             </div>
 
-                            {(question.type === 'select' || question.type === 'radio' || question.type === 'checkbox') && (
+                            {['select', 'radio', 'checkbox'].includes(question.type) && (
                               <div className="space-y-3">
                                 <label className="block text-sm font-medium text-gray-700">Options</label>
-                                <div className="space-y-2">
-                                  {(question.options || []).map((option, index) => (
-                                    <div key={index} className="flex items-center gap-2">
-                                      <input
-                                        type="text"
-                                        value={option}
-                                        onChange={(e) => {
-                                          const newOptions = [...(question.options || [])];
-                                          newOptions[index] = e.target.value;
-                                          setQuestions(questions.map(q => 
-                                            q.id === question.id 
-                                              ? { ...q, options: newOptions }
-                                              : q
-                                          ));
-                                        }}
-                                        className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        placeholder={`Option ${index + 1}`}
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => setLogicModal({ questionId: question.id, optionIndex: index, blockId: question.blockId })}
-                                        className="p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200 text-xs"
-                                      >
-                                        ➕ Add Logic
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          const newOptions = (question.options || []).filter((_, i) => i !== index);
-                                          setQuestions(questions.map(q => 
-                                            q.id === question.id 
-                                              ? { ...q, options: newOptions }
-                                              : q
-                                          ));
-                                        }}
-                                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                                      >
-                                        🗑️
-                                      </button>
-                                    </div>
-                                  ))}
-                                  <button
-                                    onClick={() => {
-                                      const newOptions = [...(question.options || []), `Option ${(question.options?.length || 0) + 1}`];
-                                      setQuestions(questions.map(q => 
-                                        q.id === question.id 
-                                          ? { ...q, options: newOptions }
-                                          : q
-                                      ));
-                                    }}
-                                    className="w-full p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors border-2 border-dashed border-blue-300 hover:border-blue-400"
-                                  >
-                                    ➕ Add Option
-                                  </button>
-                                </div>
+                                {question.options?.map((option, optionIndex) => (
+                                  <div key={optionIndex} className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={option}
+                                      onChange={(e) => {
+                                        const newOptions = [...(question.options || [])];
+                                        newOptions[optionIndex] = e.target.value;
+                                        setQuestions(questions.map(q => 
+                                          q.id === question.id ? { ...q, options: newOptions } : q
+                                        ));
+                                      }}
+                                      className="w-full px-3 py-1 border rounded"
+                                      placeholder={`Option ${optionIndex + 1}`}
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const newOptions = (question.options || []).filter((_, i) => i !== optionIndex);
+                                        setQuestions(questions.map(q => 
+                                          q.id === question.id ? { ...q, options: newOptions } : q
+                                        ));
+                                      }}
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      🗑️
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setLogicModal({
+                                          questionId: question.id,
+                                          optionIndex,
+                                          blockId: block.id
+                                        });
+                                        // Find existing logic for this option, if any
+                                        const existingLogic = question.conditionalLogic?.find(
+                                          (l) => l.option === option
+                                        );
+                                        setSelectedTarget(existingLogic?.targetBlockId || '');
+                                      }}
+                                      className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                    >
+                                      Add Logic
+                                    </button>
+                                  </div>
+                                ))}
+                                <button
+                                  onClick={() => {
+                                    const newOptions = [...(question.options || []), ''];
+                                    setQuestions(questions.map(q => 
+                                      q.id === question.id ? { ...q, options: newOptions } : q
+                                    ));
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  + Add Option
+                                </button>
                               </div>
                             )}
                           </div>
@@ -434,45 +436,67 @@ const FormBuilder: React.FC = () => {
             </button>
           </div>
           {logicModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-end sm:items-center justify-center z-50">
-              <div className="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-md mx-auto shadow-lg animate-slideup">
-                <h3 className="text-lg font-bold mb-4">Add Logic for Option</h3>
-                <p className="mb-2 text-sm text-gray-700">When this option is selected, go to:</p>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Add Logic</h3>
+                <p className="text-gray-600 mb-1">
+                  When this option is selected...
+                </p>
+                <p className="font-medium text-gray-800 mb-4">
+                  {`"${questions.find(q => q.id === logicModal.questionId)?.options?.[logicModal.optionIndex]}"`}
+                </p>
+
+                <label htmlFor="target-block" className="block text-sm font-medium text-gray-700 mb-2">
+                  Go to this block:
+                </label>
                 <select
-                  className="w-full p-3 border border-gray-300 rounded-lg mb-4"
+                  id="target-block"
                   value={selectedTarget}
-                  onChange={e => setSelectedTarget(e.target.value)}
+                  onChange={(e) => setSelectedTarget(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg bg-gray-50"
                 >
-                  <option value="">Select next question...</option>
-                  {questions.filter(q => q.blockId === logicModal.blockId && q.id !== logicModal.questionId).map(q => (
-                    <option key={q.id} value={q.id}>{q.label}</option>
-                  ))}
+                  <option value="">-- Select Next Block --</option>
+                  {blocks
+                    .filter(b => b.id !== logicModal.blockId)
+                    .map(b => (
+                      <option key={b.id} value={b.id}>
+                        {b.title}
+                      </option>
+                    ))}
                 </select>
-                <div className="flex gap-2 justify-end">
+
+                <div className="flex justify-end gap-3 mt-6">
                   <button
-                    className="px-4 py-2 rounded bg-gray-200 text-gray-700"
-                    onClick={() => { setLogicModal(null); setSelectedTarget(''); }}
+                    onClick={() => setLogicModal(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                   >
                     Cancel
                   </button>
                   <button
-                    className="px-4 py-2 rounded bg-blue-600 text-white font-bold"
-                    disabled={!selectedTarget}
                     onClick={() => {
-                      setQuestions(questions.map(q => {
-                        if (q.id === logicModal.questionId) {
-                          const newLogic = [...(q.conditionalLogic || [])];
-                          newLogic[logicModal.optionIndex] = {
-                            option: (q.options || [])[logicModal.optionIndex],
-                            targetFormId: selectedTarget
-                          };
-                          return { ...q, conditionalLogic: newLogic };
+                      const question = questions.find(q => q.id === logicModal.questionId);
+                      if (question && question.options) {
+                        const option = question.options[logicModal.optionIndex];
+                        let existingLogic = question.conditionalLogic || [];
+                        
+                        // Remove existing logic for this option if it exists
+                        existingLogic = existingLogic.filter(l => l.option !== option);
+
+                        // Add new logic if a target is selected
+                        if (selectedTarget) {
+                          existingLogic.push({ option, targetBlockId: selectedTarget });
                         }
-                        return q;
-                      }));
+                        
+                        setQuestions(questions.map(q => 
+                          q.id === logicModal.questionId
+                            ? { ...q, conditionalLogic: existingLogic }
+                            : q
+                        ));
+                      }
                       setLogicModal(null);
                       setSelectedTarget('');
                     }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     Save Logic
                   </button>
@@ -561,8 +585,8 @@ const FormPreview: React.FC<{ blocks: Block[]; questions: Question[] }> = ({ blo
     if (!question) return currentQuestionIndex + 1;
     if (question.conditionalLogic && selectedOption) {
       const logic = question.conditionalLogic.find(l => l.option === selectedOption);
-      if (logic && logic.targetFormId) {
-        const idx = blockQuestions.findIndex(q => q.id === logic.targetFormId);
+      if (logic && logic.targetBlockId) {
+        const idx = blockQuestions.findIndex(q => q.id === logic.targetBlockId);
         if (idx !== -1) return idx;
       }
     }
