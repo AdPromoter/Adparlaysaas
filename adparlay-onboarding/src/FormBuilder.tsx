@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface Question {
@@ -34,6 +34,67 @@ const FormBuilder: React.FC = () => {
   } | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string>('');
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Autosave and navigation modal state
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+  const [showNavModal, setShowNavModal] = useState(false);
+  const [hasUnsaved, setHasUnsaved] = useState(false);
+
+  // Autosave to localStorage
+  useEffect(() => {
+    if (blocks.length > 0 || questions.length > 0) {
+      localStorage.setItem('formbuilder_draft_blocks', JSON.stringify(blocks));
+      localStorage.setItem('formbuilder_draft_questions', JSON.stringify(questions));
+      setHasUnsaved(true);
+    }
+  }, [blocks, questions]);
+
+  // On mount, check for draft
+  useEffect(() => {
+    const draftBlocks = localStorage.getItem('formbuilder_draft_blocks');
+    const draftQuestions = localStorage.getItem('formbuilder_draft_questions');
+    if ((draftBlocks && JSON.parse(draftBlocks).length > 0) || (draftQuestions && JSON.parse(draftQuestions).length > 0)) {
+      setShowRestorePrompt(true);
+    }
+  }, []);
+
+  // Restore draft
+  const handleRestoreDraft = () => {
+    const draftBlocks = localStorage.getItem('formbuilder_draft_blocks');
+    const draftQuestions = localStorage.getItem('formbuilder_draft_questions');
+    if (draftBlocks) setBlocks(JSON.parse(draftBlocks));
+    if (draftQuestions) setQuestions(JSON.parse(draftQuestions));
+    setShowRestorePrompt(false);
+  };
+  // Discard draft
+  const handleDiscardDraft = () => {
+    localStorage.removeItem('formbuilder_draft_blocks');
+    localStorage.removeItem('formbuilder_draft_questions');
+    setShowRestorePrompt(false);
+  };
+
+  // Save and go to dashboard
+  const handleSaveAndGo = () => {
+    localStorage.setItem('formbuilder_draft_blocks', JSON.stringify(blocks));
+    localStorage.setItem('formbuilder_draft_questions', JSON.stringify(questions));
+    setHasUnsaved(false);
+    navigate('/dashboard');
+  };
+  // Discard and go to dashboard
+  const handleDiscardAndGo = () => {
+    localStorage.removeItem('formbuilder_draft_blocks');
+    localStorage.removeItem('formbuilder_draft_questions');
+    setHasUnsaved(false);
+    navigate('/dashboard');
+  };
+
+  // Intercept dashboard navigation
+  const handleDashboardClick = () => {
+    if (hasUnsaved && (blocks.length > 0 || questions.length > 0)) {
+      setShowNavModal(true);
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   const addBlock = () => {
     const newBlock: Block = {
@@ -78,7 +139,7 @@ const FormBuilder: React.FC = () => {
       {/* Back to Dashboard Button */}
       <div className="mb-6 flex items-center">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={handleDashboardClick}
           className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
         >
           <span className="text-lg">←</span> Dashboard
@@ -431,6 +492,33 @@ const FormBuilder: React.FC = () => {
                   ×
                 </button>
                 <FormPreview blocks={blocks} questions={questions} />
+              </div>
+            </div>
+          )}
+          {/* Restore Draft Modal */}
+          {showRestorePrompt && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-auto shadow-lg">
+                <h3 className="text-lg font-bold mb-4">Restore Unsaved Form?</h3>
+                <p className="mb-4 text-gray-700">A draft form was found. Would you like to restore it?</p>
+                <div className="flex gap-2 justify-end">
+                  <button className="px-4 py-2 rounded bg-gray-200 text-gray-700" onClick={handleDiscardDraft}>Discard</button>
+                  <button className="px-4 py-2 rounded bg-blue-600 text-white font-bold" onClick={handleRestoreDraft}>Restore</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Navigation Modal */}
+          {showNavModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-auto shadow-lg">
+                <h3 className="text-lg font-bold mb-4">Leave Form Builder?</h3>
+                <p className="mb-4 text-gray-700">Do you want to save your form before leaving?</p>
+                <div className="flex gap-2 justify-end">
+                  <button className="px-4 py-2 rounded bg-gray-200 text-gray-700" onClick={() => setShowNavModal(false)}>Cancel</button>
+                  <button className="px-4 py-2 rounded bg-red-600 text-white font-bold" onClick={handleDiscardAndGo}>Discard & Go</button>
+                  <button className="px-4 py-2 rounded bg-green-600 text-white font-bold" onClick={handleSaveAndGo}>Save & Go</button>
+                </div>
               </div>
             </div>
           )}
