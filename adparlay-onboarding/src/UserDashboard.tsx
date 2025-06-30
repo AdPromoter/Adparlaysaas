@@ -166,12 +166,20 @@ const UserDashboard: React.FC = () => {
                       <div>
                         <h3 className="font-medium text-gray-900">Property Inquiry Form</h3>
                         <p className="text-sm text-gray-500">https://adparlay.com/form/property-inquiry</p>
-                        <p className="text-sm text-gray-600">12 leads collected</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Active</span>
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
-                        <button className="text-gray-600 hover:text-gray-800 text-sm">Copy Link</button>
+                        <div className="flex items-center gap-2 mt-2 mb-1 flex-wrap">
+                          <p className="text-sm text-gray-600 mb-0">12 leads collected</p>
+                          <button
+                            className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                            onClick={() => setActiveTab('leads')}
+                          >
+                            View Leads
+                          </button>
+                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 ml-auto">Active</span>
+                        </div>
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          <button className="text-blue-600 hover:text-blue-800 text-sm bg-blue-50 rounded px-3 py-1">Edit</button>
+                          <button className="text-gray-600 hover:text-gray-800 text-sm bg-gray-50 rounded px-3 py-1">Copy Link</button>
+                        </div>
                       </div>
                     </div>
                   </div>
