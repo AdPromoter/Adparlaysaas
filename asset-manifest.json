@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/Adparlaysaas/static/css/main.352b7b69.css",
-    "main.js": "/Adparlaysaas/static/js/main.775ab94c.js",
+    "main.js": "/Adparlaysaas/static/js/main.72f33bf8.js",
     "index.html": "/Adparlaysaas/index.html",
     "main.352b7b69.css.map": "/Adparlaysaas/static/css/main.352b7b69.css.map",
-    "main.775ab94c.js.map": "/Adparlaysaas/static/js/main.775ab94c.js.map"
+    "main.72f33bf8.js.map": "/Adparlaysaas/static/js/main.72f33bf8.js.map"
   },
   "entrypoints": [
     "static/css/main.352b7b69.css",
-    "static/js/main.775ab94c.js"
+    "static/js/main.72f33bf8.js"
   ]
 }
