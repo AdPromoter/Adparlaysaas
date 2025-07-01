@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/Adparlaysaas/static/css/main.352b7b69.css",
+    "main.js": "/Adparlaysaas/static/js/main.775ab94c.js",
+    "index.html": "/Adparlaysaas/index.html",
+    "main.352b7b69.css.map": "/Adparlaysaas/static/css/main.352b7b69.css.map",
+    "main.775ab94c.js.map": "/Adparlaysaas/static/js/main.775ab94c.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.352b7b69.css",
+    "static/js/main.775ab94c.js"
+  ]
+}
