@@ -28,6 +28,24 @@ const UserDashboard: React.FC = () => {
     return new Date(dateString).toLocaleString();
   };
 
+  const handleExportCSV = () => {
+    if (!submissions.length) return;
+    const headers = ['Form', 'Date', 'Responses'];
+    const rows = submissions.map(sub => [
+      getFormTitle(sub.formId),
+      formatDate(sub.submittedAt),
+      JSON.stringify(sub.formData)
+    ]);
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 font-sans">
       <header className="bg-panel shadow-md border-b border-border rounded-b-3xl">
@@ -156,17 +174,25 @@ const UserDashboard: React.FC = () => {
                 <p className="text-muted mb-6">
                   Manage your lead collection forms and track your business growth.
                 </p>
-                
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-primary/10 p-4 rounded-lg">
+                  <div
+                    className="bg-primary/10 p-4 rounded-lg cursor-pointer hover:bg-primary/20 transition-colors"
+                    onClick={() => navigate('/form-builder')}
+                  >
                     <h3 className="font-medium text-primary">Create Forms</h3>
                     <p className="text-primary text-sm mt-1">Build custom lead collection forms</p>
                   </div>
-                  <div className="bg-success/10 p-4 rounded-lg">
+                  <div
+                    className="bg-success/10 p-4 rounded-lg cursor-pointer hover:bg-success/20 transition-colors"
+                    onClick={() => setActiveTab('leads')}
+                  >
                     <h3 className="font-medium text-success">Track Leads</h3>
                     <p className="text-success text-sm mt-1">Monitor and manage your leads</p>
                   </div>
-                  <div className="bg-secondary/10 p-4 rounded-lg">
+                  <div
+                    className="bg-secondary/10 p-4 rounded-lg cursor-pointer hover:bg-secondary/20 transition-colors"
+                    onClick={() => setActiveTab('analytics')}
+                  >
                     <h3 className="font-medium text-secondary">Analytics</h3>
                     <p className="text-secondary text-sm mt-1">View performance insights</p>
                   </div>
@@ -212,7 +238,7 @@ const UserDashboard: React.FC = () => {
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-lg font-medium text-heading">Recent Leads</h2>
-                  <button className="text-primary hover:text-primary/90 text-sm">Export CSV</button>
+                  <button className="text-primary hover:text-primary/90 text-sm" onClick={handleExportCSV}>Export CSV</button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-border">
@@ -259,6 +285,13 @@ const UserDashboard: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {activeTab === "analytics" && (
+              <div>
+                <h2 className="text-lg font-medium text-heading mb-4">Analytics (Coming Soon)</h2>
+                <p className="text-muted">Analytics and insights will be available here.</p>
               </div>
             )}
           </div>

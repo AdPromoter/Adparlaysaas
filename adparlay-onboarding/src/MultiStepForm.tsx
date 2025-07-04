@@ -92,7 +92,6 @@ const MultiStepForm: React.FC = () => {
     if (summaryRef.current) {
       try {
         const canvas = await html2canvas(summaryRef.current, {
-          background: "#ffffff",
           useCORS: true,
           allowTaint: true
         });
